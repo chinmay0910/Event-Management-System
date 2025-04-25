@@ -312,7 +312,7 @@ router.get('/all', async (req, res) => {
       try {
           // Send data to Flask for sentiment analysis
           const flaskResponse = await axios.post(
-              'http://127.0.0.1:6000/analyze_feedback',  // Use 127.0.0.1 instead of localhost
+              'https://m04g2ltz-6000.inc1.devtunnels.ms/analyze_feedback',  // Use 127.0.0.1 instead of localhost
               results,
               {
                   headers: {

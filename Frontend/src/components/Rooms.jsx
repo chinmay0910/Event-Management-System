@@ -20,7 +20,7 @@ export default function RoomBooking() {
   }, []);
 
   const fetchRooms = () => {
-    fetch('http://localhost:5000/api/room')
+    fetch('https://event-management-system-ext9.onrender.com/api/room')
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch rooms');
@@ -63,7 +63,7 @@ export default function RoomBooking() {
 
   const fetchEventDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/data/${eventId}`);
+      const response = await fetch(`https://event-management-system-ext9.onrender.com/api/data/${eventId}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch event details');
@@ -90,7 +90,7 @@ export default function RoomBooking() {
       return;
     }
     // Make API call to book the room
-    fetch(`http://localhost:5000/api/room/${selectedRoom._id}/book`, {
+    fetch(`https://event-management-system-ext9.onrender.com/api/room/${selectedRoom._id}/book`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -128,7 +128,7 @@ export default function RoomBooking() {
   // Function to handle cancellation
   const handleCancel = (roomId) => {
     // Make API call to cancel the booking
-    fetch(`http://localhost:5000/api/room/${roomId}/cancel`, {
+    fetch(`https://event-management-system-ext9.onrender.com/api/room/${roomId}/cancel`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -168,7 +168,7 @@ export default function RoomBooking() {
   const handlePostponeSubmit = (e, roomId) => {
     e.preventDefault();
     // Make API call to update booking time
-    fetch(`http://localhost:5000/api/room/${roomId}/postpone`, {
+    fetch(`https://event-management-system-ext9.onrender.com/api/room/${roomId}/postpone`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -202,7 +202,7 @@ export default function RoomBooking() {
   // Function to check if the room booking is cancelled
   const isEventCancelled = async (eventId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/data/${eventId}/`, {
+      const response = await fetch(`https://event-management-system-ext9.onrender.com/api/data/${eventId}/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

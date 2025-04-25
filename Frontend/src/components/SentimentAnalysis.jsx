@@ -362,7 +362,7 @@ export default function SentimentAnalysisDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/events/all');
+        const response = await axios.get('https://event-management-system-ext9.onrender.com/api/events/all');
         setEventData(response.data);
         setLoading(false);
       } catch (err) {

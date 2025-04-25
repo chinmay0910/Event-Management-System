@@ -11,7 +11,7 @@ function SystemDashboard() {
 
   useEffect(() => {
     // Fetch room data from backend API
-    fetch('http://localhost:5000/api/room')
+    fetch('https://event-management-system-ext9.onrender.com/api/room')
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch rooms');
@@ -34,7 +34,7 @@ function SystemDashboard() {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/data', {
+      const response = await fetch('https://event-management-system-ext9.onrender.com/api/data', {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +71,7 @@ function SystemDashboard() {
 
   const handleCancelEvent = async (eventId, cancelType) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/data/cancelRoomBooking/${eventId}`, {
+      const response = await fetch(`https://event-management-system-ext9.onrender.com/api/data/cancelRoomBooking/${eventId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ function SystemDashboard() {
                 <td className="border px-4 py-2">{new Date(item.eventDate).toLocaleDateString()}</td>
                 <td className="border px-4 py-2">{item.duration}</td>
                 <td className="border px-4 py-2">
-                  <a href={`http://localhost:5000/uploads/${item.poaPdf}`} className='text-indigo-500 hover:underline' target="_blank" rel="noopener noreferrer">View PDF</a>
+                  <a href={`https://event-management-system-ext9.onrender.com/uploads/${item.poaPdf}`} className='text-indigo-500 hover:underline' target="_blank" rel="noopener noreferrer">View PDF</a>
                 </td>
                 <td className="border px-4 py-2">
                   {item.cancelled === 2 ? (

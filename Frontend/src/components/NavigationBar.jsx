@@ -49,7 +49,7 @@ export default function StickyNavbar() {
 
     const getUser = async () => {
         // API call
-        const response = await fetch('http://localhost:5000/api/auth/getuser', {
+        const response = await fetch('https://event-management-system-ext9.onrender.com/api/auth/getuser', {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -222,7 +222,7 @@ export default function StickyNavbar() {
                     to="/"
                     className="mr-4 cursor-pointer text-xl font-extrabold text-black text-xl"
                 >
-                    FrAngel Events
+                    Events Dashboard
                 </Link>
                 <div className="mr-4 hidden lg:block mr-auto text-md">{navList}</div>
                 <div className="flex items-center gap-2">

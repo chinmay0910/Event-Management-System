@@ -20,7 +20,7 @@ const EventForm = ({ showModal, setShowModal, fetchData, eventId }) => {
 
     const fetchEventData = async (eventId) => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/data/${eventId}`);
+            const response = await axios.get(`https://event-management-system-ext9.onrender.com/api/data/${eventId}`);
             const eventData = await response.data;
             setEventData({
                 title: eventData.eventName,
@@ -71,7 +71,7 @@ const EventForm = ({ showModal, setShowModal, fetchData, eventId }) => {
         formData.append('image', eventData.image);
 
         try {
-            const response = await fetch('http://localhost:5000/api/events/addEvents', {
+            const response = await fetch('https://event-management-system-ext9.onrender.com/api/events/addEvents', {
                 method: 'POST',
                 body: formData,
                 headers: {
