@@ -22,39 +22,34 @@ export default function StickyNavbar() {
             () => window.innerWidth >= 960 && setOpenNav(false),
         );
 
-        (async () => {
-            await getUser();
-        
+        const checkAuth = async () => {
+            if (window.localStorage.getItem("FrAngel-auth-token")) {
+                setIsSignin(true);
+                await getUser();
+            } else {
+                navigate("/signin");
+            }
+        };
 
-        if (window.localStorage.getItem("FrAngel-auth-token")) {
-            setIsSignin(true);
-            await getUser();
-        }
-        else {
-            navigate("/signin");
-        }
+        checkAuth();
 
-    })()
     }, []);
 
     useEffect(() => {
-        if (user.role == "hod") {
-            navigate("/hod")
+        if (user.role === "hod") {
+            navigate("/hod");
+        } else if (user.role === "principle") {
+            navigate("/principle");
+        } else if (user.role === "commitee") {
+            navigate("/commitee");
+        } else if (user.role === "student") {
+            navigate("/upcomingevents");
         }
-        else if (user.role == "principle") {
-            navigate("/principle")
-        }
-        else if (user.role == "commitee") {
-            navigate("/commitee")
-        }
-        else if (user.role == "student") {
-            navigate("/upcomingevents")
-        }
-    }, [user])
+    }, [user]);
 
     const getUser = async () => {
         // API call
-        const response = await fetch('https://event-management-system-ext9.onrender.com/api/auth/getuser', {
+        const response = await fetch('http://localhost:5000/api/auth/getuser', {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -62,24 +57,21 @@ export default function StickyNavbar() {
             },
         });
         const json = await response.json();
-        setUser(json)
-        console.log(user);
-
-    }
+        setUser(json);
+    };
 
     const handleSignout = async () => {
         localStorage.removeItem('FrAngel-auth-token');
         await getUser();
         navigate('/signin');
         setIsSignin(false);
-        await getUser();
-    }
+    };
 
     const navList = (
         <ul className="mt-2 mb-4 flex flex-col gap-1 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-4">
             {
                 user.role == "hod"
-                    ?
+                    && (
                     <>
                         <Typography
                             as="li"
@@ -98,10 +90,11 @@ export default function StickyNavbar() {
                             </Link>
                         </Typography>
                     </>
-
-                    :
-                    user.role == "commitee"
-                        ?
+                    )
+            }
+            {
+                user.role == "commitee"
+                        && (
                         <>
                             <Typography
                                 as="li"
@@ -138,10 +131,12 @@ export default function StickyNavbar() {
                             </Typography>
 
                         </>
-                        :
+                        )}
+                        {
+
                         user.role == "principle"
-                            ?
-                            <>
+                            &&
+                            (<>
                                 <Typography
                                     as="li"
                                     className="p-1 font-normal text-black hover:bg-gray-300 px-4 rounded"
@@ -158,11 +153,13 @@ export default function StickyNavbar() {
                                         Analysis Portal
                                     </Link>
                                 </Typography>
-                            </>
-                            :
+                            </>)
+                        }
+                            {
+
                             user.role == "system"
-                                ?
-                                <>
+                            &&
+                                (<>
                                 <Typography
                                     as="li"
                                     className="p-1 font-normal text-black hover:bg-gray-300 px-4 rounded"
@@ -187,8 +184,13 @@ export default function StickyNavbar() {
                                         Availabale Rooms
                                     </Link>
                                 </Typography>
-                                </>
-                                :
+                                </>)
+                            }
+                            {
+                                user.role == "student"
+                                &&
+                                (
+
                                 <>
                                     <Typography
                                         as="li"
@@ -208,8 +210,8 @@ export default function StickyNavbar() {
                                     </Typography>
 
                                 </>
-
-            }
+                                )
+                            }
         </ul>
     );
 
@@ -298,26 +300,26 @@ export default function StickyNavbar() {
                     </IconButton>
                 </div>
             </div>
-            <MobileNav open={openNav}>
-                {navList}
-                {
-                    IsSignin
-                        ?
-                        <Button fullWidth variant="gradient" size="sm" className="bg-black">
-                            <span>Logout</span>
-                        </Button>
-                        :
-                        <div className="flex items-center gap-x-1">
-                            <Button fullWidth variant="text" size="sm" className="text-black">
-                                <span>Log In</span>
-                            </Button>
+                {/* <MobileNav open={openNav}>
+                    {navList}
+                    {
+                        IsSignin
+                            ?
                             <Button fullWidth variant="gradient" size="sm" className="bg-black">
-                                <span>Sign in</span>
+                                <span>Logout</span>
                             </Button>
-                        </div>
+                            :
+                            <div className="flex items-center gap-x-1">
+                                <Button fullWidth variant="text" size="sm" className="text-black">
+                                    <span>Log In</span>
+                                </Button>
+                                <Button fullWidth variant="gradient" size="sm" className="bg-black">
+                                    <span>Sign in</span>
+                                </Button>
+                            </div>
 
-                }
-            </MobileNav>
+                    }
+                </MobileNav> */}
         </Navbar>
 
     );

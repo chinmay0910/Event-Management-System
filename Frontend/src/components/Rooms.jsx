@@ -10,10 +10,17 @@ export default function RoomBooking() {
   const [committeeDetails, setCommitteeDetails] = useState('');
   const [bookingTime, setBookingTime] = useState(new Date()); // Default to current date
   const [modalOpen, setModalOpen] = useState(false);
+  const [showPostponeForm, setShowPostponeForm] = useState(false);
+  const [newBookingTime, setNewBookingTime] = useState(new Date());
+
 
   useEffect(() => {
     // Fetch room data from backend API
-    fetch('https://event-management-system-ext9.onrender.com/api/room')
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = () => {
+    fetch('http://localhost:5000/api/room')
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch rooms');
@@ -26,7 +33,7 @@ export default function RoomBooking() {
       .catch(error => {
         console.error('Error fetching rooms:', error);
       });
-  }, []);
+  }
 
   // Filter rooms based on selected date and booked status
   const filteredRooms = rooms.filter(room => {
@@ -41,21 +48,49 @@ export default function RoomBooking() {
       console.error('Room not found');
       return;
     }
-    if (!room.booked) {
+    if (!Array.isArray(room.bookedAt) || !room.bookedAt.some(date => new Date(date).setHours(0, 0, 0, 0) === new Date(bookingTime).setHours(0, 0, 0, 0))) { //Array.isArray(room.bookedAt) && room.bookedAt.some(date => new Date(date).setHours(0, 0, 0, 0) === new Date(bookingTime).setHours(0, 0, 0, 0)
       setSelectedRoom(room);
+      console.log('Selected Room:', JSON.stringify(room));
+      fetchEventDetails(); // Fetch event details before opening modal
       setModalOpen(true);
     } else {
+      setSelectedRoom(room);
+      console.log('Selected Room:', JSON.stringify(room));
       setModalOpen(true); // Open modal to display booking details
     }
   };
 
-  const handleSubmit = () => {
+
+  const fetchEventDetails = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/data/${eventId}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch event details');
+      }
+
+      const eventData = await response.json();
+
+      // Prefill form fields with event details
+      setCommitteeDetails(await eventData.committeeName);
+      const eventDate = new Date(await eventData.eventDate);
+      setBookingTime(eventDate);
+
+    } catch (error) {
+      console.error('Error fetching event details:', error);
+    }
+  };
+
+
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
     if (!committeeDetails || !bookingTime) {
       alert('Please fill in all details');
       return;
     }
     // Make API call to book the room
-    fetch(`https://event-management-system-ext9.onrender.com/api/room/${selectedRoom._id}/book`, {
+    fetch(`http://localhost:5000/api/room/${selectedRoom._id}/book`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -76,6 +111,7 @@ export default function RoomBooking() {
             const updatedBookedAt = Array.isArray(room.bookedAt) ? [...room.bookedAt, bookingTime] : [bookingTime];
             return { ...room, booked: true, allocatedTo: committeeDetails, bookedAt: updatedBookedAt, eventId: eventId };
           }
+          fetchRooms();
           return room;
         }));
         // Close the modal
@@ -88,6 +124,103 @@ export default function RoomBooking() {
         console.error('Error booking room:', error);
       });
   };
+
+  // Function to handle cancellation
+  const handleCancel = (roomId) => {
+    // Make API call to cancel the booking
+    fetch(`http://localhost:5000/api/room/${roomId}/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ eventId: eventId })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to cancel booking');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Booking cancelled successfully:', data);
+        // Update room status locally
+        setRooms(rooms.map(room => {
+          if (room._id === selectedRoom._id) {
+            return { ...room, booked: false, allocatedTo: '', bookedAt: [], eventId: '' };
+          }
+          return room;
+        }));
+        // Close the modal
+        setModalOpen(false);
+        setSelectedRoom(null);
+      })
+      .catch(error => {
+        console.error('Error cancelling booking:', error);
+      });
+  };
+
+  // Function to handle postpone button click
+  const handlePostpone = () => {
+    setShowPostponeForm(true);
+  };
+
+  // Function to handle submission of new booking time
+  const handlePostponeSubmit = (e, roomId) => {
+    e.preventDefault();
+    // Make API call to update booking time
+    fetch(`http://localhost:5000/api/room/${roomId}/postpone`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ eventId: eventId, newBookingTime: newBookingTime })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to postpone booking');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Booking postponed successfully:', data);
+        // Update booking time for the selected room locally
+        setRooms(rooms.map(room => {
+          if (room._id === selectedRoom._id) {
+            return { ...room, bookedAt: [newBookingTime] };
+          }
+          return room;
+        }));
+        // Close the modal
+        setModalOpen(false);
+        setSelectedRoom(null);
+      })
+      .catch(error => {
+        console.error('Error postponing booking:', error);
+      });
+  };
+
+  // Function to check if the room booking is cancelled
+  const isEventCancelled = async (eventId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/data/${eventId}/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to check room cancellation status');
+      }
+
+      const data = await response.json();
+      return data.cancelled == 2; // Return true if cancelled, false otherwise
+    } catch (error) {
+      console.error('Error checking room cancellation status:', error);
+      return false; // Return false in case of error
+    }
+  };
+
 
   const closeModal = () => {
     setModalOpen(false);
@@ -133,20 +266,54 @@ export default function RoomBooking() {
             {selectedRoom && (
               <div>
                 <p>Room: {selectedRoom.roomNumber}</p>
-                {selectedRoom.booked ? (
-                  <div>
-                    <p>Booked by: {selectedRoom.allocatedTo}</p>
-                    <p>Booking Time: {selectedRoom.bookedAt}</p>
-                  </div>
-                ) : (
-                  <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                {Array.isArray(selectedRoom.bookedAt) && selectedRoom.bookedAt.map((date, index) => { 
+                  if (new Date(date).setHours(0, 0, 0, 0) === new Date(bookingTime).setHours(0, 0, 0, 0) ) { //date in array and !eventData.cancelled (true)
+                    // if (!isEventCancelled(selectedRoom.allocatedTo[index])) {
+                    return <>
+                      <p key={index}>Booked by: {Array.isArray(selectedRoom.allocatedTo) ? selectedRoom.allocatedTo[index] : ''}</p>
+                      {/* Cancel Button */}
+                      <button onClick={()=>handleCancel(selectedRoom._id)} className="bg-red-500 text-white px-4 py-2 rounded-md mr-2">Cancel Event</button>
+
+                      {/* Postpone Button */}
+                      <button onClick={()=>handlePostpone()} className="bg-yellow-500 text-white px-4 py-2 rounded-md">Postpone</button>
+
+                      {/* Postpone Form (Optional) */}
+                      {showPostponeForm && (
+                        <form onSubmit={()=>handlePostponeSubmit(selectedRoom._id)}>
+                          {/* Input for new booking time */}
+                          <DatePicker
+                            selected={newBookingTime}
+                            onChange={(date) => setNewBookingTime(date)}
+                            dateFormat="MMMM d, yyyy"
+                            className="border border-gray-300 rounded-md p-2 w-full"
+                          />
+
+                          {/* Submit Button */}
+                          <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md mt-2">Confirm Postpone</button>
+                        </form>
+                      )}
+
+                    </>
+
+                    // }
+                  }
+                  return null;
+                })}
+                {!Array.isArray(selectedRoom.bookedAt) || !selectedRoom.bookedAt.some(date => new Date(date).setHours(0, 0, 0, 0) === new Date(bookingTime).setHours(0, 0, 0, 0)) && ( //!date not in array and !eventData.cancelled (true) || date in Array and eventData.cancelled
+                  <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                       <label htmlFor="committeeDetails" className="block font-medium">Committee Details:</label>
-                      <input type="text" id="committeeDetails" className="border border-gray-300 rounded-md p-2 w-full" value={committeeDetails} onChange={(e) => setCommitteeDetails(e.target.value)} />
+                      <input type="text" id="committeeDetails" className="border border-gray-300 rounded-md p-2 w-full" disabled value={committeeDetails} onChange={(e) => setCommitteeDetails(e.target.value)} />
                     </div>
                     <div className="mb-4">
                       <label htmlFor="bookingTime" className="block font-medium">Booking Time:</label>
-                      <input type="datetime-local" id="bookingTime" className="border border-gray-300 rounded-md p-2 w-full" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} />
+                      <input
+                        type="datetime-local"
+                        id="bookingTime"
+                        className="border border-gray-300 rounded-md p-2 w-full"
+                        value={bookingTime.toISOString().slice(0, 16)}
+                        onChange={(e) => setBookingTime(new Date(e.target.value))}
+                      />
                     </div>
                     <div className="flex flex-row">
                       <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded-md">Book</button>
@@ -156,6 +323,7 @@ export default function RoomBooking() {
                 )}
               </div>
             )}
+
           </div>
         </div>
       )}

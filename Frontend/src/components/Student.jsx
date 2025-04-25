@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faPlus, faRectangleXmark } from '@fortawesome/free-solid-svg-icons';
 import EventForm from './EventForm';
 
 function Student() {
@@ -12,6 +12,7 @@ function Student() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [user, setUser] = useState({});
+  const [eventID, setEventID] = useState('');
   const [formData, setFormData] = useState({
     id: 0,
     committeeName: '',
@@ -32,7 +33,7 @@ function Student() {
 
   const getUser = async () => {
     // API call
-    const response = await fetch('https://event-management-system-ext9.onrender.com/api/auth/getuser', {
+    const response = await fetch('http://localhost:5000/api/auth/getuser', {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -47,7 +48,7 @@ function Student() {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get('https://event-management-system-ext9.onrender.com/api/data', {
+      const response = await axios.get('http://localhost:5000/api/data', {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -70,7 +71,7 @@ function Student() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`https://event-management-system-ext9.onrender.com/api/data/${id}`);
+      await axios.delete(`http://localhost:5000/api/data/${id}`);
       fetchData();
     } catch (error) {
       console.error('Error deleting data:', error);
@@ -109,9 +110,9 @@ function Student() {
       formDataToSend.append('status', formData.status);
 
       if (editMode) {
-        await axios.put(`https://event-management-system-ext9.onrender.com/api/data/${editId}`, formDataToSend);
+        await axios.put(`http://localhost:5000/api/data/${editId}`, formDataToSend);
       } else {
-        await axios.post('https://event-management-system-ext9.onrender.com/api/data', formDataToSend);
+        await axios.post('http://localhost:5000/api/data', formDataToSend);
       }
       fetchData();
       setShowModal(false);
@@ -152,9 +153,35 @@ function Student() {
     return `${day}-${month}-${year}`;
   }
 
-  const handleAddEvent = () => {
+  const handleAddEvent = (EventID) => {
+    console.log(EventID);
+    setEventID(EventID);
     setShowEventModal(true);
   };
+
+  const handleCancelEvent = async (eventId, cancelType) => {
+    try {
+        const response = await fetch(`http://localhost:5000/api/data/cancelRoomBooking/${eventId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'FrAngel-auth-token': `${localStorage.getItem('FrAngel-auth-token')}` // Assuming you store the access token in localStorage
+            },
+            body: JSON.stringify({cancelType}) // No need to send any data in the body
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to cancel room booking');
+        }
+
+        const data = await response.json();
+        alert(data.message); // Set cancel message if needed
+        fetchData();
+    } catch (error) {
+        console.error('Error cancelling room booking:', error);
+        alert('Failed to cancel room booking');
+    }
+};
 
   return (
     <div className="container mx-auto mt-8">
@@ -198,14 +225,30 @@ function Student() {
                 <td className="border px-4 py-2">{extractDateComponents(item.eventDate)}</td>
                 <td className="border px-4 py-2">{item.duration}</td>
                 <td className="border px-4 py-2">
-                  <a href={`https://event-management-system-ext9.onrender.com/uploads/${item.poaPdf}`} target="_blank" rel="noopener noreferrer" className='text-blue-800'>View PDF</a>
+                  <a href={`http://localhost:5000/uploads/${item.poaPdf}`} target="_blank" rel="noopener noreferrer" className='text-blue-800'>View PDF</a>
                 </td>
                 <td className="border px-4 py-2" style={{ color: getStatusColor(item.status) }}>{item.status}</td>
                 <td className="border px-4 py-2">
                   {
-                    item.HODApproval == 1 && item.PrincipleApproval == 1 && item.RoomAllocated ? (
-                      <FontAwesomeIcon icon={faPlus} onClick={handleAddEvent} className="ms-2 cursor-pointer text-green-500" />
-                      ) 
+                    item.HODApproval == 1 && item.PrincipleApproval == 1 && item.RoomAllocated && item.cancelled == 0 ? (
+                      <>
+                      <FontAwesomeIcon icon={faPlus} onClick={()=>handleAddEvent(item._id)} className="ms-2 cursor-pointer text-green-500" title='Publicize Event'/>
+                      <FontAwesomeIcon icon={faRectangleXmark} onClick={()=>handleCancelEvent(item._id, 'cancel')} className="ms-2 cursor-pointer text-orange-500" title='Cancel Event'/>
+                      </>
+                      
+                      ) :
+                      item.HODApproval == 1 && item.PrincipleApproval == 1 && item.RoomAllocated && item.cancelled == 1 ? (
+                        <>
+                          <button className='bg-orange-500 hover:bg-orange-600 px-2 rounded text-wrap text-white' onClick={()=>handleCancelEvent(item._id, 'revert')}>Cancel Request Pending (Revert)</button>
+                        </>
+                        
+                        ) :
+                      item.HODApproval == 1 && item.PrincipleApproval == 1 && item.RoomAllocated && item.cancelled == 2 ? (
+                        <>
+                          <p className='text-red-500 text-lg font-bold'>Event Cancel</p>
+                        </>
+                        
+                        ) 
                       :
                       <>
                       <FontAwesomeIcon icon={faEdit} onClick={() => handleEdit(item._id)} className="cursor-pointer text-blue-500 mr-2" />
@@ -335,7 +378,7 @@ function Student() {
         </div>
       )}
 
-      <EventForm showModal={showEventModal} setShowModal={setShowEventModal} fetchData={fetchData} />
+      <EventForm showModal={showEventModal} setShowModal={setShowEventModal} fetchData={fetchData} eventId={eventID}/>
     </div>
   );
 }
