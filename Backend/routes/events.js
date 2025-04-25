@@ -8,6 +8,7 @@ const multer = require('multer');
 const { uploadImageToCloudinary } = require('../utils/imageUpload');
 const data = require('../models/data');
 const { body } = require('express-validator');
+const axios = require('axios');
 
 
 // Route to get all events
@@ -252,6 +253,42 @@ router.post('/:eventId/questions/:questionId/replies', fetchuser, async (req, re
   }
 });
 
+// router.get('/all', async (req, res) => {
+//   try {
+//       // Get all events
+//       const events = await Event.find();
+
+//       // For each event, fetch feedback
+//       const results = await Promise.all(events.map(async (event) => {
+//           const Feedbacks = await feedback.find({ eventId: event._id });
+
+//           return {
+//               eventId: event._id,
+//               eventName: event.title,
+//               totalFeedback: Feedbacks.length,
+//               Feedbacks: Feedbacks.map((feedback) => ({
+//                 userId: feedback.userId,
+//                   comments: feedback.comments
+//               }))
+//           };
+//       }));
+
+//       // const response = await axios.post('https://api.example.com/feedback', {
+//       //     body: results,
+//       //     headers: {
+//       //         'Content-Type': 'application/json',
+//       //     }     
+//       // }); 
+//       // const feedbackData = await response.data;
+//       // Send the results as a response
+
+//       res.json(results);
+//   } catch (error) {
+//       console.error('Error fetching all feedback:', error);
+//       res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
 router.get('/all', async (req, res) => {
   try {
       // Get all events
@@ -267,21 +304,41 @@ router.get('/all', async (req, res) => {
               totalFeedback: Feedbacks.length,
               Feedbacks: Feedbacks.map((feedback) => ({
                 userId: feedback.userId,
-                  comments: feedback.comments
+                comments: feedback.comments
               }))
           };
       }));
 
-      const response = await axios.post('https://api.example.com/feedback', {
-          body: results,
-          headers: {
-              'Content-Type': 'application/json',
-          }     
-      }); 
-      const feedbackData = await response.data;
-      // Send the results as a response
-
-      res.json(results);
+      try {
+          // Send data to Flask for sentiment analysis
+          const flaskResponse = await axios.post(
+              'http://127.0.0.1:6000/analyze_feedback',  // Use 127.0.0.1 instead of localhost
+              results,
+              {
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  timeout: 5000  // Add timeout
+              }
+          );
+          
+          // Send the analyzed results back to frontend
+          res.json(flaskResponse.data);
+      } catch (flaskError) {
+          console.error('Error connecting to Flask server:', flaskError);
+          // Return results without sentiment analysis if Flask is down
+          res.json(results.map(event => ({
+              ...event,
+              positiveCount: 0,
+              negativeCount: 0,
+              neutralCount: 0,
+              Feedbacks: event.Feedbacks.map(fb => ({
+                  ...fb,
+                  sentiment: 'neutral',
+                  rating: 0
+              }))
+          })));
+      }
   } catch (error) {
       console.error('Error fetching all feedback:', error);
       res.status(500).json({ message: 'Server error' });
