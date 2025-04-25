@@ -12,6 +12,10 @@ const dataSchema = new mongoose.Schema({
   HODApproval: { type: Number, default: 0 },
   PrincipleApproval: { type: Number, default: 0 },
   RoomAllocated: Boolean,
+  cancelled: {
+    type: Number,
+    default: 0
+  },
   status: { type: String, default: 'Pending from all' }
 });
 

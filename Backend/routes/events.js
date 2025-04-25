@@ -7,6 +7,7 @@ const user = require('../models/user');
 const multer = require('multer');
 const { uploadImageToCloudinary } = require('../utils/imageUpload');
 const data = require('../models/data');
+const { body } = require('express-validator');
 
 
 // Route to get all events
@@ -248,6 +249,42 @@ router.post('/:eventId/questions/:questionId/replies', fetchuser, async (req, re
   } catch (error) {
     console.error('Error adding reply:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.get('/all', async (req, res) => {
+  try {
+      // Get all events
+      const events = await Event.find();
+
+      // For each event, fetch feedback
+      const results = await Promise.all(events.map(async (event) => {
+          const Feedbacks = await feedback.find({ eventId: event._id });
+
+          return {
+              eventId: event._id,
+              eventName: event.title,
+              totalFeedback: Feedbacks.length,
+              Feedbacks: Feedbacks.map((feedback) => ({
+                userId: feedback.userId,
+                  comments: feedback.comments
+              }))
+          };
+      }));
+
+      const response = await axios.post('https://api.example.com/feedback', {
+          body: results,
+          headers: {
+              'Content-Type': 'application/json',
+          }     
+      }); 
+      const feedbackData = await response.data;
+      // Send the results as a response
+
+      res.json(results);
+  } catch (error) {
+      console.error('Error fetching all feedback:', error);
+      res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const RoomSchema = new Schema({
     eventId: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Event'
+        ref: 'data'
     }],
     roomNumber: { type: String, required: true },
     allocatedTo: [{ type: String }], // Array of committee names
